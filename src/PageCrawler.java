@@ -1,5 +1,3 @@
-import com.gargoylesoftware.htmlunit.BrowserVersion;
-import com.gargoylesoftware.htmlunit.WebClient;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -10,6 +8,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+    PageCrawler is a helper class to WebCrawler, it crawls the webstie in 3 steps:
+    1. establish a connection to the given url and saved the html file from that url to htmlDoc
+    2. get links to another website by finding <a href...> elem. because we do not want links that belong to the subdomains
+       of the website, we only add links which contain the domain to subLinks
+    3. get assets of the website by finding elements with attributes src and <link ...> elements. These links are automatically
+       added to assets so long as they have form (WebCrawler.domain + something + "." + something_else)
+ */
 public class PageCrawler {
     //link to the page that we need to crawl
     private String link;
@@ -20,10 +26,6 @@ public class PageCrawler {
     private static final int OK_STATUS_CODE = 200;
 
     public PageCrawler(String link) {
-        WebClient webClient = new WebClient(BrowserVersion.getDefault());
-        //enable JavaScript in web client
-        webClient.getOptions().setJavaScriptEnabled(true);
-
         this.link = link;
 
         try {
@@ -43,18 +45,18 @@ public class PageCrawler {
         return subLinks;
     }
 
+    public List<String> getAssets() {
+        return assets;
+    }
+
+    public String getLink() {
+        return link;
+    }
+
+
     public void getLinksAssets() throws IOException {
         WebCrawler.visitedPages.add(link);
-
         getStaticContent();
-
-        //traverse the sublist
-        for(String l : subLinks) {
-            if(!WebCrawler.visitedPages.contains(l)) {
-                WebCrawler.visitedPages.add(l);
-                (new PageCrawler(l)).getLinksAssets();
-            }
-        }
     }
 
     private void getStaticContent() {
@@ -63,34 +65,18 @@ public class PageCrawler {
         printLinkAssets();
     }
 
-    public void printLinkAssets() {
-        System.out.println("\t{");
-        //print link from page
-        System.out.println("\t\t\"url\": \"" + link + "\",");
-        System.out.println("\t\t\"assets\": [");
-
-        //print assets from page
-        for(String a : assets) {
-            System.out.print("\t\t\t\"" + a + "\"");
-
-            //add a comma if the element a is not the last one in assets
-            if(assets.indexOf(a) != assets.size() - 1) {
-                System.out.println(",");
-            }
-        }
-
-        System.out.println("\t\t]");
-        System.out.println("\t}");
-    }
-
+    /*
+        Get all links - elements that have <a href .. > tag
+     */
     public void getLinksFromDomain() {
         Elements linksOnPage = htmlDoc.select("a[href]");
 
         for(Element li : linksOnPage) {
-            String l = li.absUrl("href");
+            //remove the redirection to a section on a page entirely, only keeping the link
+            String l = li.absUrl("href").split("#")[0];
 
             //make sure the extracted link belongs to the domain and is not a subdomain
-            if(l.contains(WebCrawler.domain) && !l.contains("#") && !subLinks.contains(l)) {
+            if(l.contains(WebCrawler.domain) && !subLinks.contains(l)) {
                 String[] removeDom = l.split(WebCrawler.domain);
 
                 if(removeDom.length > 0) {
@@ -114,6 +100,9 @@ public class PageCrawler {
         getImports();
     }
 
+    /*
+        Get all elements with src attribute
+     */
     public void getMedia() {
         //get all media in the page
         Elements src = htmlDoc.select("[src]");
@@ -129,6 +118,9 @@ public class PageCrawler {
         }
     }
 
+    /*
+        Get all imports element <link ... >
+     */
     public void getImports() {
         //get all imports
         Elements href = htmlDoc.select("link[href]");
@@ -143,9 +135,55 @@ public class PageCrawler {
                 //make sure that the import is a file
                 if(removedDom.length > 0 && removedDom[1].contains(".")) {
                     assets.add(is);
-                    //System.out.println(is);
                 }
             }
         }
+    }
+
+    public void printLinkAssets() {
+        System.out.println("\t{");
+        //print link from page
+        System.out.println("\t\t\"url\": \"" + link + "\",");
+        System.out.println("\t\t\"assets\": [");
+
+        //print assets from page
+        for(String a : assets) {
+            System.out.print("\t\t\t\"" + a + "\"");
+
+            //add a comma if the element a is not the last one in assets
+            if(assets.indexOf(a) != assets.size() - 1) {
+                System.out.println(",");
+            }
+        }
+
+        System.out.println("\t\t]");
+        System.out.println("\t}");
+    }
+
+    /*
+        Overriding equals method to aid testing. Two PageCrawlers are equals if and only if they have the same link, list
+        of assets and subLinks.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof PageCrawler) {
+            PageCrawler p = ((PageCrawler) obj);
+
+            if(link.equals(p.getLink())) {
+                for(String l : subLinks) {
+                    if(!p.getLinks().contains(l)) {
+                        return false;
+                    }
+                }
+
+                for(String a : assets) {
+                    if(!p.getAssets().contains(a)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
     }
 }
