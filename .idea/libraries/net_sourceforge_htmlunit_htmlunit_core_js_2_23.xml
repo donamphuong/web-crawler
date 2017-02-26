@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="net.sourceforge.htmlunit:htmlunit-core-js:2.23" type="repository">
+    <properties maven-id="net.sourceforge.htmlunit:htmlunit-core-js:2.23" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/net/sourceforge/htmlunit/htmlunit-core-js/2.23/htmlunit-core-js-2.23.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

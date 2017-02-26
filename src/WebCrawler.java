@@ -17,7 +17,7 @@ public class WebCrawler {
     }
 
     public static void main(String[] args) throws IOException {
-        WebCrawler crawler = new WebCrawler("https://www.doc.ic.ac.uk/project/2015/163/g1516332/web/");
+        WebCrawler crawler = new WebCrawler("https://gocardless.com/");
         crawler.crawlDom();
     }
 

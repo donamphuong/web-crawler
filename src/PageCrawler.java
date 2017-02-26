@@ -55,8 +55,9 @@ public class PageCrawler {
 
 
     public void getLinksAssets() throws IOException {
-        WebCrawler.visitedPages.add(link);
-        getStaticContent();
+        if(htmlDoc != null) {
+            getStaticContent();
+        }
     }
 
     private void getStaticContent() {
